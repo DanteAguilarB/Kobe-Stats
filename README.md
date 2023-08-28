@@ -15,8 +15,8 @@ The main objective of this project was to practice data analysis and data visual
 ## Project Files
 
 - The HTML file showcasing the final project results can be viewed and downloaded: [Dante Aguilar - Final Project.html](https://github.com/DanteAguilarB/Kobe-Stats/blob/main/Dante%20Aguilar%20-%20Final%20Project.html)
-- The R-Studio project file used for analysis is available: [FinalProjectTemplate-1 copy.rmd]
-- The .csv file that I used for all of my data: [kobe.csv]
+- The R-Studio project file used for analysis is available: [FinalProjectTemplate-1 copy.rmd](https://github.com/DanteAguilarB/Kobe-Stats/blob/main/FinalProjectTemplate-1%20copy.rmd)
+- The .csv file that I used for all of my data: [kobe.csv](https://github.com/DanteAguilarB/Kobe-Stats/blob/main/kobe.csv)
 
 ---
 
