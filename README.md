@@ -14,14 +14,9 @@ The main objective of this project was to practice data analysis and data visual
 
 ## Project Files
 
-- The HTML file showcasing the final project results can be viewed and downloaded: [Dante Aguilar - Final Project.html](insert_html_file_url_here)
-- The R-Studio project file used for analysis is available: [FinalProjectTemplate-1 copy.rmd](insert_rmd_file_url_here)
-
-## Summary
-
-This project served as an opportunity for me to apply the skills I acquired in my data science course to a real-world dataset. Despite the data's inconsistencies, I was able to extract valuable insights and practice my data analysis techniques using R-Studio.
-
-Feel free to explore the project files and reach out to me if you have any questions or feedback.
+- The HTML file showcasing the final project results can be viewed and downloaded: [Dante Aguilar - Final Project.html]
+- The R-Studio project file used for analysis is available: [FinalProjectTemplate-1 copy.rmd]
+- The .csv file that I used for all of my data: [kobe.csv]
 
 ---
 
