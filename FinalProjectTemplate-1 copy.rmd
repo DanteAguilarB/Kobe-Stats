@@ -1,0 +1,218 @@
+---
+title: "Final Project - Kobe Bryant's Mamba Mentality Represented By His 2009 Final's MVP Stats"
+author: "Dante Aguilar"
+output:
+  html_document:
+    code_folding: hide
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+    echo = TRUE,
+    message = FALSE,
+    warning = FALSE
+)
+```
+
+
+# Introduction 
+
+Kobe Bryant, known for his fierce dedication and unmatched work ethic, earned his first finals MVP and his second championship with the Lakers in 2009 against the Orlando Magic. I found this data set online that kept track of Kobe's shots throughout the five game series and I decided I would analyze Kobe's game in order to see if the numbers really reflect the way Kobe presents himself on the court. In this article we will take a look at some of Kobe's individual stats, such as his shooting percentage and the range of his jumpers, in order to try and find evidence that justifies Kobe's first final's MVP award.
+
+## Results 
+
+#### Packages
+```{r}
+#import your dataset in this chunk
+kobeMVP <- read.csv("kobe_basket.csv")
+
+#LOAD PACKAGES 
+library(tidyverse)
+library(kableExtra)
+library(scales)
+library(ggrepel)
+library(ggplot2)
+library(janitor)
+```
+
+
+### Box Score 
+
+```{r}
+#Kobe's stats using join functions 
+
+kobeMVP <- kobeMVP %>% #Challenge 1 - str_detect
+  mutate(points = ifelse(shot == "M", 0, ifelse(str_detect(description, "three"), 3, 2))) #uses stringr
+
+points_per_game <- kobeMVP %>% 
+  group_by(game) %>% 
+  summarise(points = sum(points))
+
+shotsH <- kobeMVP %>% # shots made per game 
+  group_by(game) %>% 
+  filter(str_detect(shot, "H")) %>% 
+  summarise(shots_made = n())
+
+shotsM <- kobeMVP %>% # shots missed per game 
+  group_by(game) %>% 
+  filter(str_detect(shot, "M")) %>% 
+  summarise(shots_missed = n())
+
+kobeStats <- shotsH %>% # Challenge 2 - inner_join 
+  inner_join(shotsM, by = c("game")) %>% 
+  mutate(total_shots = shots_made+shots_missed) %>% 
+  mutate(shooting_accuracy = shots_made/total_shots)
+
+kobeStats <- kobeStats%>% 
+  inner_join(points_per_game, by = c("game"))
+
+# Organizing the table headers 
+kobeStats <-kobeStats%>% 
+  mutate(Won = "")
+
+kobeStats <- kobeStats[c(1,7,2,3,4,5,6)]
+```
+
+```{r kobaStats, fig.cap="Figure 1"}
+
+# Kobe's stats using Kable styling 
+
+kobeStats %>%
+  kbl(col.names = c("Game","Won", "Shots Made", "Shots Missed", "Shots Attempted", "True Shooting Percentage", "Points Without FT"), caption = "Figure 1: Kobe's Stats Throughout the 2009 NBA Finals", digits = 2) %>% 
+  kable_classic(lightable_options = 'hover') %>%
+  column_spec(2, image = spec_image(c("lakers_logo.jpg","lakers_logo.jpg", "magic_logo.png","lakers_logo.jpg", "lakers_logo.jpg"),100,100)) 
+  
+  
+```
+
+Figure 1:
+Form: Table  
+
+This figure shows Kobe Bryant's efficiency with his jumpshots throughout the stretch of the five games in the finals. The true shooting percentage shows that his most efficient game was Game 2, while his least efficient was Game 4. Since the Lakers only lost in game three, there is no apparent connection between Kobe's efficiency from the field and his team's overall performance. The figure also shows Kobe's points per game without free throws. Game 1 was his highest scoring game, while Game 2 was his lowest scoring game. Again, there is no clear connection between the Laker's loss and Kobe's points per game. 
+
+
+### Kobe's Shooting Range 
+```{r}
+#creating a column that extracts the length of a jumper 
+library(janitor)
+
+#Using substr to isolate the shot length in order to showcase it in Figure 4 
+
+shot_variation <- kobeMVP %>%  # Bonus Challenge: substr
+  filter(str_detect(description, "foot")) %>% 
+  mutate(index = str_locate(description, "-foot")) %>% 
+  mutate(length_in_ft = substr(description, index[,"start"]-2, index[,"end"]))
+
+shot_variation <- shot_variation %>% 
+  select(-starts_with("index"), -vs, -description,-shot)
+
+shot_variation <- shot_variation[c(1,2,5,4,3)]
+
+```
+
+
+```{r}
+shot_variation %>% 
+  kbl(col.names = c("Game","Quarter","Shot Length", "Points", "Time"), caption = "Figure 2: Kobe's Shot Analysis Throughout The Finals") %>%
+  
+  # Adding some color to this long table 
+  kable_classic_2() %>% 
+  row_spec(1,color = "white", background = "#572B69") %>% 
+  row_spec(2,color = "black", background = "#FEBC00") %>% 
+  row_spec(25,color = "white", background = "#572B69") %>% 
+  row_spec(26,color = "black", background = "#FEBC00") %>% 
+  row_spec(44,color = "white", background = "#572B69") %>% 
+  row_spec(45,color = "black", background = "#FEBC00") %>% 
+  row_spec(72,color = "white", background = "#572B69") %>% 
+  row_spec(73,color = "black", background = "#FEBC00") 
+
+
+```
+
+Figure 2: 
+Form: Table 
+
+This table shows Kobe's shot range in games 1,2,4, and 5. Game 3 wasn't included in this table because its format differed from the rest of the games, which made it difficult for the code to read it. This table allows you to see the types of shots Kobe was taking (mid-ranges, shots in the paint, three pointers) based on the distance from the the basket. No patterns can be seen at a first glance of this table. Kobe was likely taking whatever open looks he got.
+
+
+### Stats Table Flipped Vertically and Used as a Bar Graph 
+
+```{r}
+#flips the graph vertically. I want to have the game number as columns, stats as different rows. 
+
+kobeLong <- kobeStats %>% #Challenge 3 - pivot_longer
+  pivot_longer(cols = shots_made:points, names_to = "categories", values_to = "stats") %>% 
+  filter(categories != "shooting_accuracy")
+```
+
+
+```{r}
+
+kobeLong %>%
+  ggplot(aes(x=game, y = stats))+
+  geom_bar(stat = "identity", position = "dodge", aes(fill = categories)) +
+  scale_fill_manual(name = "Categories", labels = c("Points", "Shots Made", "Shots Missed", "Shots Attempted"), values=c("black","#FEBC00", "#572B69", "#A2CCEE" )) +
+  labs(title="Figure 3: Kobe's Stats Grouped", x= "Game", y="Stats") +
+  theme_classic()
+
+  
+
+```
+
+Figure 3:
+Form: Group Bar Graph
+
+This figure groups the categories in the first table and displays them in a bar graph format that allows you to see how his statistics changed over the span of these five games. An interesting relationship that could be spotted in this graph is a relationship between Kobe's shot attempts and his points per game. Ultimately, the more shots that Kobe took, the more points he scored. This connection makes sense given that he averaged a shooting percentage of 43.8 percent according to Figure 1.
+
+### Kobe's Stats Over the Five Games
+```{r}
+
+kobeLong %>% 
+  ggplot(aes(x = game, y = stats, class = categories, color = categories)) +
+  geom_line() +
+  geom_point() +
+  scale_color_manual(name = "Categories", labels = c("Points", "Shots Made", "Shots Missed", "Shots Attempted"), values = c("black","#FEBC00", "#572B69", "#A2CCEE")) +
+  labs(title="Figure 4: Kobe's Stats Line Graph", x= "Game", y="Stats") +
+  theme_classic()
+```
+
+Figure 4:
+Form: Dotted Line Graph
+
+This graph, similar to Figure 3, shows a visual of the stat categories from Figure 1 over the span of the five games. This graph, however, allows for a much better visual representation of Kobe's shooting efficiency. You can see a gap between the shots made and the shots missed (lines gold and purple respectively) around games 3-5. The graph also shows why Kobe's shooting percentage was at its lowest in Game 4; as the light blue line increases (shots attempted), the gold line (shots made) stays within the same range of the rest of the games. 
+
+  
+## Discussion 
+
+Before jumping to any conclusions about Kobe's 2009 finals performance, I want to point out some challenges that I encountered while wrangling with this data. The two main issues I came across while working with this dataset were that the data was extremely limited compared to a real NBA box score, and that the dataset did not adhere to a specific format for collecting its data. The dataset failed to keep track of Kobe's free throws, steals, blocks, and assists, which made it impossible to evaluate Kobe's overall impact on the team's perforamnce aside from the points that he scored during such. Additionally, the format for Game 3 was completely different to that of the rest of the games, which meant that functions like str_detect() and summarise() were not able to gather information from Game 3.
+
+Despite of these challenges, I was able to analyze Kobe's individual performance to an extent. I believe that this data says more about Kobe's work ethic and strong mentality rather than his impact on a basketball game. Although we saw a fluctuation of Kobe's accuracy throughout the five game series, Kobe did not become dicouraged to handle the basketball, and in fact, took on the most challenging shots when it mattered most. We can see Kobe's killer instinct by taking a look at his shot attempts in fourth quarters. In Game 4 he took 12 out of his 30 total shots in the fourth quarter and overtime, and in Game 5 he took 8 out of his 23 shot attempts in the fourth quarter alone. These were arguably the most important games of the series, because as a team, you want to make sure you are in control of the game's momentum. Having a 3-1 lead puts a lot of the pressure on the other team to make a historic comeback, but you also don't want to allow them to have hope for a come back in game 5. Kobe took on the responsibility in the last instances of Game 5 to put away the Orlando Magic and win the title of NBA Champion, as well as his first Finals MVP.  
+
+## Additional Pages {.tabset .tabset-fade}
+
+### Acknowledgements 
+I would like to thank Jimmy Rasolosoa for taking intrest in my project and asking to check out my graphs. Even though my project was still in its very earliest stages, Jimmy's enthusiastic "wooooow" really gave me the push that I needed to move forward with my vision of this project. Thank you Jimmy. I hope that I have made you proud and I hope that Lyon win the Ligue 1 one day. 
+
+### References
+
+ESPN. "NBA - National Basketball Association." ESPN, 14 June 2009, www.espn.com/nba/game/_/gameId/290614019. Accessed 18 May 2023.
+
+"Kobe Bryant Stats - 2009 Finals." StatMuse, www.statmuse.com/nba/ask/kobe-bryant-stats-2009-finals#:~:text=Kobe%20Bryant%20averaged%2032.4%20points,in%20the%202009%20NBA%20Finals. Accessed 18 May 2023.
+
+
+### Notes (challenges accepted)
+
+Challenge 1: 
+str_detect
+- used it to create the shooting percentage variable by dividing the amount of shots "H"(hit) and shots "M"(missed).
+
+Challenge 2:
+inner_join
+- created the data set "kobeStats" by joining "shotsH" and "shotsM", which were both data sets in which I filtered for shots hit and shots missed, respectively, off the "KobeMVP" data set, inside of the "shots" column.
+
+Challenge 3:
+pivot_longer
+- created a long table in which I created a column called "categories" where all the stat categories were stored (shotsH, shotsM, total_shots, shots_made). I also created another column called stats that counted these stats numerically. I did this in order to create a grouped bar graph to try and create a visual of the stats table. 
+
+Bonus: 
+substr
+- substr is a base function in r that we didn't cover in class, yet I took the time to experiment with and ultimately incorporate into my project. I used substr to isolate specific strings in the shot description column of "KobeMVP" in order to create my own column that showed the distance of Kobe's throughout the five game series. 
